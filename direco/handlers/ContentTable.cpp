@@ -3,7 +3,7 @@
 //
 
 #include "ContentTable.h"
-#include "../Section.h"
+#include "Section.h"
 
 #include <fmt/format.h>
 

@@ -34,6 +34,8 @@ struct GeneratorImpl {
   std::filesystem::path footer;
   std::filesystem::path outputFile = "output.html";
   bool contentTable = true;
+
+  std::list<std::filesystem::path> usedFiles;
 };
 
 
@@ -56,6 +58,7 @@ void Generator::LoadConfig(const std::filesystem::path &configFile) {
   LOG_INFO << "Preparing release note from " << configFile.generic_string();
 
   YAML::Node config = YAML::LoadFile(configFile.generic_string());
+  mImpl->usedFiles.push_back(configFile);
 
   if (config["content-table"].IsDefined()
       && (
@@ -131,6 +134,7 @@ void Generator::Build(const std::filesystem::path &outDir) {
 
   {
     fs.open(mImpl->header, std::fstream::in);
+    mImpl->usedFiles.push_back(mImpl->header);
     std::stringstream ss;
     ss << fs.rdbuf();
     fs.close();
@@ -150,6 +154,7 @@ void Generator::Build(const std::filesystem::path &outDir) {
     for (const auto &doc: section.items) {
       fso << fmt::format(R"(<h2 id="{}" class="docId">{}</h2>)", doc.title, doc.title) << std::endl;
       fs.open(doc.path, std::fstream::in);
+      mImpl->usedFiles.push_back(doc.path);
       std::stringstream ss;
       ss << fs.rdbuf();
       std::string str = ss.str();
@@ -168,8 +173,17 @@ void Generator::Build(const std::filesystem::path &outDir) {
   }
 
   fs.open(mImpl->footer, std::fstream::in);
+  mImpl->usedFiles.push_back(mImpl->footer);
   fso << fs.rdbuf();
   fs.close();
 
   fso.close();
+}
+
+std::list<std::filesystem::path> Generator::GetUsedFiles() {
+  return mImpl->usedFiles;
+}
+
+std::filesystem::path Generator::GetOutputFile() {
+  return mImpl->outputFile;
 }

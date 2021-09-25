@@ -16,3 +16,9 @@
 [submodule "external/plog"]
 	path = external/plog
 	url = https://github.com/SergiusTheBest/plog.git
+[submodule "external/drogon"]
+	path = external/drogon
+	url = https://github.com/drogonframework/drogon.git
+[submodule "external/fswatch"]
+	path = external/fswatch
+	url = https://github.com/BertrandD/fswatch.git

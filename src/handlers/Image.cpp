@@ -42,6 +42,7 @@ void Image::Handle(std::string &str, const std::filesystem::path& root) {
       continue;
     }
 
+    LOG_INFO << "Using image " << imPath.string();
     utils::Replace(str, "{{img:" + refName + "}}", "data:image/jpeg;base64," + encoded);
 
     refPos = str.find("{{img:", endRefPos);

@@ -32,6 +32,7 @@ void File::Handle(std::string &str, const std::filesystem::path &root) {
     ssi << fs.rdbuf();
     fs.close();
 
+    LOG_INFO << "Using file " << filePath.string();
     utils::Replace(str, "{{file:" + refName + "}}", ssi.str());
 
     refPos = str.find("{{file:", endRefPos);

@@ -3,6 +3,12 @@
 //
 
 #include "Generator.h"
+#include "handlers/File.h"
+#include "handlers/Image.h"
+#include "handlers/Variable.h"
+#include "handlers/References.h"
+#include "handlers/ContentTable.h"
+#include "Section.h"
 
 // Markdown parser
 #include <maddy/parser.h>
@@ -17,15 +23,6 @@
 #include <fstream>
 #include <fmt/format.h>
 
-struct Item {
-  std::string title;
-  std::filesystem::path path;
-};
-struct Section {
-  std::string title;
-  std::list<Item> items;
-};
-
 struct GeneratorImpl {
   std::unordered_map<std::string, std::string> vars;
   std::vector<Section> sections;
@@ -34,16 +31,6 @@ struct GeneratorImpl {
   std::filesystem::path footer;
   std::filesystem::path outputFile = "output.html";
   bool contentTable = true;
-
-  std::stringstream BuildContentTable();
-
-  std::stringstream HandleImages(std::stringstream ss) const;
-
-  void HandleImages(std::string &stri) const;
-
-  void HandleFiles(std::string &stri) const;
-
-  std::stringstream HandleFiles(std::stringstream ss) const;
 };
 
 
@@ -127,126 +114,6 @@ void Generator::LoadConfig(const std::filesystem::path &configFile) {
   }
 }
 
-void Replace(std::string &str, const std::string &token, const std::string &value) {
-  auto tokenPos = str.find(token);
-  while (tokenPos != std::string::npos) {
-    str.replace(tokenPos, token.length(), value);
-    tokenPos = str.find(token);
-  }
-}
-
-std::stringstream Replace(std::fstream &fs, const std::unordered_map<std::string, std::string> &replace) {
-  std::stringstream ss;
-  ss << fs.rdbuf();
-  std::string s = ss.str();
-  for (const auto &item: replace) {
-    Replace(s, "{{" + item.first + "}}", item.second);
-  }
-  ss.str(s);
-  return ss;
-}
-
-void HandleRefs(std::stringstream &ss, unsigned int &offset) {
-  std::string str = ss.str();
-  auto refPos = str.find("$ref:", 0);
-  while (refPos != std::string::npos) {
-    auto endRefPos = str.find('$', refPos + 5);
-    std::string refName = str.substr(refPos + 5, (endRefPos - refPos - 5));
-
-    Replace(str, "$ref:" + refName + "$", std::to_string(offset++));
-
-    refPos = str.find("$ref:", endRefPos);
-  }
-
-  ss.str(str);
-}
-
-void GeneratorImpl::HandleImages(std::string &stri) const {
-  auto refPos = stri.find("{{img:", 0);
-  while (refPos != std::string::npos) {
-    auto endRefPos = stri.find("}}", refPos + 6);
-    std::string refName = stri.substr(refPos + 6, (endRefPos - refPos - 6));
-
-    std::filesystem::path imPath = root / refName;
-
-    if (!std::filesystem::exists(imPath)) {
-      std::cerr << "Image not found: " << imPath.string() << std::endl;
-      refPos = stri.find("{{img:", endRefPos);
-      continue;
-    }
-
-    std::fstream fs;
-    fs.open(imPath, std::fstream::in);
-    std::stringstream ssi;
-    ssi << fs.rdbuf();
-    fs.close();
-    std::string input = ssi.str();
-    std::string encoded;
-    if (!Base64::Encode(input, &encoded)) {
-      std::cerr << "Failed to encode image" << std::endl;
-      refPos = stri.find("{{img:", endRefPos);
-      continue;
-    }
-
-    Replace(stri, "{{img:" + refName + "}}", "data:image/jpeg;base64," + encoded);
-
-    refPos = stri.find("{{img:", endRefPos);
-  }
-}
-
-void GeneratorImpl::HandleFiles(std::string &stri) const {
-  auto refPos = stri.find("{{file:", 0);
-  while (refPos != std::string::npos) {
-    auto endRefPos = stri.find("}}", refPos + 7);
-    std::string refName = stri.substr(refPos + 7, (endRefPos - refPos - 7));
-
-    std::filesystem::path filePath = root / refName;
-
-    if (!std::filesystem::exists(filePath)) {
-      std::cerr << "File not found: " << filePath.string() << std::endl;
-      refPos = stri.find("{{file:", endRefPos);
-      continue;
-    }
-
-    std::fstream fs;
-    fs.open(filePath, std::fstream::in);
-    std::stringstream ssi;
-    ssi << fs.rdbuf();
-    fs.close();
-
-    Replace(stri, "{{file:" + refName + "}}", ssi.str());
-
-    refPos = stri.find("{{file:", endRefPos);
-  }
-}
-
-std::stringstream GeneratorImpl::HandleImages(std::stringstream ss) const {
-  std::string str = ss.str();
-  HandleImages(str);
-  ss.str(str);
-  return ss;
-}
-
-std::stringstream GeneratorImpl::HandleFiles(std::stringstream ss) const {
-  std::string str = ss.str();
-  HandleFiles(str);
-  ss.str(str);
-  return ss;
-}
-
-std::stringstream GeneratorImpl::BuildContentTable() {
-  std::stringstream ss;
-  ss << R"(<div class="tableOfContent">)";
-  for (const auto &section: sections) {
-    ss << fmt::format(R"(<a href="#{}" class="sectionTitle">{}</a>)", section.title, section.title);
-    for (const auto &doc: section.items) {
-      ss << fmt::format(R"(<a href="#{}" class="docTitle">{}</a>)", doc.title, doc.title);
-    }
-  }
-  ss << R"(</div>)";
-  return ss;
-}
-
 void Generator::Build(const std::filesystem::path &outDir) {
   if (!std::filesystem::exists(outDir)) {
     std::cout << "INFO: Creating directory " << outDir.string() << std::endl;
@@ -260,31 +127,40 @@ void Generator::Build(const std::filesystem::path &outDir) {
   std::fstream fso, fs;
   fso.open(outDir / mImpl->outputFile, std::fstream::out);
 
-  fs.open(mImpl->header, std::fstream::in);
-  fso << mImpl->HandleFiles(mImpl->HandleImages(Replace(fs, mImpl->vars))).rdbuf();
-  if (mImpl->contentTable)
-    fso << mImpl->BuildContentTable().rdbuf();
-  fs.close();
+  {
+    fs.open(mImpl->header, std::fstream::in);
+    std::stringstream ss;
+    ss << fs.rdbuf();
+    fs.close();
+    std::string str = ss.str();
+    Variable::Handle(str, mImpl->vars);
+    Image::Handle(str, mImpl->root);
+    File::Handle(str, mImpl->root);
+    if (mImpl->contentTable)
+      ContentTable::Build(str, mImpl->sections);
+    fso << str;
+  }
 
   unsigned int offset = 1;
-  std::shared_ptr<maddy::Parser> parser = std::make_shared<maddy::Parser>(config);
+  std::shared_ptr<maddy::Parser> parser = std::make_shared<maddy::Parser>();
   for (const auto &section: mImpl->sections) {
     fso << fmt::format(R"(<h1 id="{}" class="sectionId">{}</h1>)", section.title, section.title) << std::endl;
     for (const auto &doc: section.items) {
       fso << fmt::format(R"(<h2 id="{}" class="docId">{}</h2>)", doc.title, doc.title) << std::endl;
       fs.open(doc.path, std::fstream::in);
-      auto ss = Replace(fs, mImpl->vars);
-      HandleRefs(ss, offset);
-      std::string html;
+      std::stringstream ss;
+      ss << fs.rdbuf();
+      std::string str = ss.str();
+      Variable::Handle(str, mImpl->vars);
+      References::Handle(str, offset);
       if (doc.path.extension() == ".md") {
-        html = parser->Parse(ss);
-      } else {
-        html = ss.str();
+        ss.str(str);
+        str = parser->Parse(ss);
       }
-      mImpl->HandleImages(html);
-      mImpl->HandleFiles(html);
+      Image::Handle(str, mImpl->root);
+      File::Handle(str, mImpl->root);
       fs.close();
-      fso << html;
+      fso << str;
     }
   }
 

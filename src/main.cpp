@@ -15,6 +15,7 @@ int main(int argc, char *argv[]) {
       ("r,root", "Root for files & references", cxxopts::value<std::string>()->default_value("."))
       ("c,config", "Config file", cxxopts::value<std::string>()->default_value("./config.yml"))
       ("o,out", "Output directory for html files", cxxopts::value<std::string>()->default_value("./output"))
+      ("s,silent", "Hide banner")
       ("h,help", "Print usage");
 
   const auto result = options.parse(argc, argv);
@@ -24,7 +25,8 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  std::cout << R"(
+  if (!result.count("silent")) {
+    std::cout << R"(
 ██████╗ ██╗███╗   ██╗ █████╗ ██████╗     ██████╗ ███████╗██╗     ███╗   ██╗ ██████╗ ████████╗███████╗
 ██╔══██╗██║████╗  ██║██╔══██╗██╔══██╗    ██╔══██╗██╔════╝██║     ████╗  ██║██╔═══██╗╚══██╔══╝██╔════╝
 ██║  ██║██║██╔██╗ ██║███████║██████╔╝    ██████╔╝█████╗  ██║     ██╔██╗ ██║██║   ██║   ██║   █████╗
@@ -35,6 +37,7 @@ int main(int argc, char *argv[]) {
     Release note generator v1.0.0 By Bertrand Darbon
 
 )";
+  }
 
   static plog::ConsoleAppender<plog::TxtFormatter> consoleAppender;
   plog::init(plog::debug, &consoleAppender);

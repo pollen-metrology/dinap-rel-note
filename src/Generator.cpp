@@ -50,7 +50,7 @@ Generator::Generator(const std::filesystem::path &root) {
 
 void Generator::LoadConfig(const std::filesystem::path &configFile) {
   if (!std::filesystem::exists(configFile)) {
-    throw std::runtime_error("Config file not found");
+    throw std::runtime_error("Config file not found: " + configFile.string());
   }
 
   LOG_INFO << "Preparing release note from " << configFile.generic_string();

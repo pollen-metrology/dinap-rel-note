@@ -9,3 +9,5 @@ add_executable(dinapRelNotes
         handlers/ContentTable.cpp)
 target_link_libraries(dinapRelNotes PRIVATE maddy yaml-cpp fmt base64 cxxopts::cxxopts plog)
 target_compile_features(dinapRelNotes PRIVATE cxx_std_20)
+
+install(TARGETS dinapRelNotes DESTINATION bin)

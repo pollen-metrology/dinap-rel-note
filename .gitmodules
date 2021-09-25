@@ -1,0 +1,15 @@
+[submodule "external/maddy"]
+	path = external/maddy
+	url = https://github.com/progsource/maddy.git
+[submodule "external/yaml-cpp"]
+	path = external/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp.git
+[submodule "external/fmt"]
+	path = external/fmt
+	url = https://github.com/fmtlib/fmt.git
+[submodule "external/base64"]
+	path = external/base64
+	url = https://github.com/tkislan/base64.git
+[submodule "external/cxxopts"]
+	path = external/cxxopts
+	url = https://github.com/jarro2783/cxxopts.git

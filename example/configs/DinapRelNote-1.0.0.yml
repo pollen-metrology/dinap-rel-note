@@ -1,0 +1,17 @@
+vars:
+  version: 1.0.0
+  date: 2021/09/25
+output: DinapRelNote-1.0.0.html
+templates:
+  header: templates/header.html
+  footer: templates/footer.html
+content-table: on
+sections:
+  - title: New Features
+    items:
+      - title: T-1235 An example Markdown file
+        file: files/T-1235.md
+      - title: T-0002 An example on html file
+        file: files/T-0002.html
+      - title: T-1235 An example Markdown file used twice with dynamic parameters
+        file: files/T-1235.md

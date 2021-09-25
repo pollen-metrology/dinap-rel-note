@@ -13,8 +13,11 @@
 // Markdown parser
 #include <maddy/parser.h>
 
+// yaml parser
 #include <yaml-cpp/yaml.h>
-#include <base64.h>
+
+// logging
+#include <plog/Log.h>
 
 // C++
 #include <iostream>
@@ -50,7 +53,7 @@ void Generator::LoadConfig(const std::filesystem::path &configFile) {
     throw std::runtime_error("Config file not found");
   }
 
-  std::cout << "Preparing release note from " << configFile.generic_string() << std::endl;
+  LOG_INFO << "Preparing release note from " << configFile.generic_string();
 
   YAML::Node config = YAML::LoadFile(configFile.generic_string());
 
@@ -67,14 +70,14 @@ void Generator::LoadConfig(const std::filesystem::path &configFile) {
   if (config["output"].IsDefined()) {
     mImpl->outputFile = config["output"].as<std::string>();
     if (std::filesystem::exists(mImpl->root / mImpl->outputFile)) {
-      std::cout << "WARN: output file already exists" << std::endl;
+      LOG_WARNING << "Output file already exists";
     }
   }
 
   for (const auto &item: config["vars"]) {
     auto key = item.first.as<std::string>();
     auto value = item.second.as<std::string>();
-    std::cout << "\t" << key << "=" << value << std::endl;
+    LOG_INFO << "\t" << key << "=" << value;
     mImpl->vars[std::move(key)] = std::move(value);
   }
 
@@ -100,11 +103,10 @@ void Generator::LoadConfig(const std::filesystem::path &configFile) {
       auto itemTitle = item["title"].as<std::string>();
       const auto itemFile = item["file"].as<std::string>();
       if (!std::filesystem::exists(mImpl->root / itemFile)) {
-        std::cerr << "Error: " << mImpl->root / itemFile << " not found" << std::endl;
+        LOG_ERROR << "Error: " << mImpl->root / itemFile << " not found";
         continue;
       }
 
-      std::cout << "Adding item " << item << " to release note" << std::endl;
       sect.items.emplace_back(Item{
           .title = std::move(itemTitle),
           .path = mImpl->root / itemFile
@@ -116,14 +118,14 @@ void Generator::LoadConfig(const std::filesystem::path &configFile) {
 
 void Generator::Build(const std::filesystem::path &outDir) {
   if (!std::filesystem::exists(outDir)) {
-    std::cout << "INFO: Creating directory " << outDir.string() << std::endl;
+    LOG_INFO << "Creating missing output directory " << outDir.string();
     std::filesystem::create_directories(outDir);
   }
   if (!std::filesystem::is_directory(outDir)) {
     throw std::runtime_error("Output directory is not a valid directory");
   }
 
-  std::cout << "Building to " << (outDir / mImpl->outputFile).string() << std::endl;
+  LOG_INFO << "Building to " << (outDir / mImpl->outputFile).string();
   std::fstream fso, fs;
   fso.open(outDir / mImpl->outputFile, std::fstream::out);
 
@@ -155,6 +157,7 @@ void Generator::Build(const std::filesystem::path &outDir) {
       References::Handle(str, offset);
       if (doc.path.extension() == ".md") {
         ss.str(str);
+        LOG_DEBUG << "Parsing Markdown file " << doc.path.string();
         str = parser->Parse(ss);
       }
       Image::Handle(str, mImpl->root);

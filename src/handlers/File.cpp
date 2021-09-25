@@ -5,6 +5,10 @@
 #include "File.h"
 #include "Utils.h"
 
+// logging
+#include <plog/Log.h>
+
+// C++
 #include <iostream>
 #include <fstream>
 
@@ -17,7 +21,7 @@ void File::Handle(std::string &str, const std::filesystem::path &root) {
     std::filesystem::path filePath = root / refName;
 
     if (!std::filesystem::exists(filePath)) {
-      std::cerr << "File not found: " << filePath.string() << std::endl;
+      LOG_ERROR << "File not found: " << filePath.string();
       refPos = str.find("{{file:", endRefPos);
       continue;
     }

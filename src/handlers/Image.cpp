@@ -5,8 +5,13 @@
 #include "Image.h"
 #include "Utils.h"
 
+// Base64 encode
 #include <base64.h>
 
+// logging
+#include <plog/Log.h>
+
+// C++
 #include <iostream>
 #include <fstream>
 
@@ -19,7 +24,7 @@ void Image::Handle(std::string &str, const std::filesystem::path& root) {
     std::filesystem::path imPath = root / refName;
 
     if (!std::filesystem::exists(imPath)) {
-      std::cerr << "Image not found: " << imPath.string() << std::endl;
+      LOG_ERROR << "Image not found: " << imPath.string() << std::endl;
       refPos = str.find("{{img:", endRefPos);
       continue;
     }
@@ -32,7 +37,7 @@ void Image::Handle(std::string &str, const std::filesystem::path& root) {
     std::string input = ssi.str();
     std::string encoded;
     if (!Base64::Encode(input, &encoded)) {
-      std::cerr << "Failed to encode image" << std::endl;
+      LOG_ERROR << "Failed to encode image" << std::endl;
       refPos = str.find("{{img:", endRefPos);
       continue;
     }

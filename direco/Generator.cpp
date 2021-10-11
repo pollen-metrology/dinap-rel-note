@@ -103,16 +103,16 @@ void Generator::LoadConfig(const std::filesystem::path &configFile) {
         .title = std::move(title)
     };
     for (const auto &item: items) {
-      auto itemTitle = item["title"].as<std::string>();
-      const auto itemFile = item["file"].as<std::string>();
-      if (!std::filesystem::exists(mImpl->root / itemFile)) {
+      auto itemTitle = item["title"].as<std::string>("");
+      auto itemFile = item["file"].as<std::string>("");
+      if (!itemFile.empty() && !std::filesystem::exists(mImpl->root / itemFile)) {
         LOG_ERROR << "Error: " << mImpl->root / itemFile << " not found";
-        continue;
+        itemFile = "";
       }
 
       sect.items.emplace_back(Item{
           .title = std::move(itemTitle),
-          .path = mImpl->root / itemFile
+          .path = itemFile.empty() ? std::nullopt : std::make_optional(mImpl->root / itemFile)
       });
     }
     mImpl->sections.emplace_back(std::move(sect));
@@ -150,25 +150,29 @@ void Generator::Build(const std::filesystem::path &outDir) {
   unsigned int offset = 1;
   std::shared_ptr<maddy::Parser> parser = std::make_shared<maddy::Parser>();
   for (const auto &section: mImpl->sections) {
-    fso << fmt::format(R"(<h1 id="{}" class="sectionId">{}</h1>)", section.title, section.title) << std::endl;
+    if (!section.title.empty())
+      fso << fmt::format(R"(<h1 id="{}" class="sectionId">{}</h1>)", section.title, section.title) << std::endl;
     for (const auto &doc: section.items) {
-      fso << fmt::format(R"(<h2 id="{}" class="docId">{}</h2>)", doc.title, doc.title) << std::endl;
-      fs.open(doc.path, std::fstream::in);
-      mImpl->usedFiles.push_back(doc.path);
-      std::stringstream ss;
-      ss << fs.rdbuf();
-      std::string str = ss.str();
-      Variable::Handle(str, mImpl->vars);
-      References::Handle(str, offset);
-      if (doc.path.extension() == ".md") {
-        ss.str(str);
-        LOG_DEBUG << "Parsing Markdown file " << doc.path.string();
-        str = parser->Parse(ss);
+      if (!doc.title.empty())
+        fso << fmt::format(R"(<h2 id="{}" class="docId">{}</h2>)", doc.title, doc.title) << std::endl;
+      if (doc.path) {
+        fs.open(doc.path.value(), std::fstream::in);
+        mImpl->usedFiles.push_back(doc.path.value());
+        std::stringstream ss;
+        ss << fs.rdbuf();
+        std::string str = ss.str();
+        Variable::Handle(str, mImpl->vars);
+        References::Handle(str, offset);
+        if (doc.path->extension() == ".md") {
+          ss.str(str);
+          LOG_DEBUG << "Parsing Markdown file " << doc.path->string();
+          str = parser->Parse(ss);
+        }
+        Image::Handle(str, mImpl->root);
+        File::Handle(str, mImpl->root);
+        fs.close();
+        fso << str;
       }
-      Image::Handle(str, mImpl->root);
-      File::Handle(str, mImpl->root);
-      fs.close();
-      fso << str;
     }
   }
 

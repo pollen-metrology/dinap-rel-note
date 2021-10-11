@@ -6,10 +6,11 @@
 
 #include <list>
 #include <filesystem>
+#include <optional>
 
 struct Item {
   std::string title;
-  std::filesystem::path path;
+  std::optional<std::filesystem::path> path;
 };
 
 struct Section {

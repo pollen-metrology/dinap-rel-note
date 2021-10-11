@@ -1,0 +1,5 @@
+ip: 0.0.0.0
+port: 8050
+root: /direserv/root
+configs: /direserv/configs
+output: /direserv/output

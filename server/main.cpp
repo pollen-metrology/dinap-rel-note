@@ -15,6 +15,7 @@ int main(int argc, char *argv[]) {
   options.add_options()
       ("c,config", "Server config file", cxxopts::value<std::string>()->default_value("./config.yml"))
       ("s,silent", "Hide banner")
+      ("b,build-only", "Build only (do not open http server)")
       ("h,help", "Print usage");
 
   const auto result = options.parse(argc, argv);
@@ -38,10 +39,13 @@ int main(int argc, char *argv[]) {
 
 )";
   }
+  if (result.count("build-only") == 1) {
+    std::cout << "Mode Build-Only" << std::endl;
+  }
 
   Server server(result["config"].as<std::string>());
 
-  server.Run();
+  server.Run(result.count("build-only") == 1);
 
   return 0;
 }

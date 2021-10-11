@@ -40,7 +40,7 @@ fs::path CheckPath(const std::string &path) {
   return path;
 }
 
-void Server::Run() {
+void Server::Run(bool buildOnly) {
   fs::path configDir = CheckPath(mImpl->config["configs"].as<std::string>());
   fs::path rootDir = CheckPath(mImpl->config["root"].as<std::string>());
   fs::path outputDir = CheckPath(mImpl->config["output"].as<std::string>());
@@ -48,6 +48,8 @@ void Server::Run() {
   Builder builder(configDir, rootDir, outputDir);
   builder.InitLogger();
   builder.Run();
+
+  if (buildOnly) return;
 
   const auto ip = mImpl->config["ip"].as<std::string>("127.0.0.1");
   const auto port = mImpl->config["port"].as<int>(80);

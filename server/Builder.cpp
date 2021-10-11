@@ -110,6 +110,7 @@ void Builder::Run() {
 }
 
 Builder::~Builder() {
+  LOG_DEBUG << "Stop builder";
   mImpl->monitor->stop();
   mImpl->thread.join();
 }

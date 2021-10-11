@@ -14,7 +14,7 @@ public:
   Server() = delete;
   explicit Server(const std::filesystem::path& configFile);
 
-  void Run();
+  void Run(bool buildOnly = false);
 
 private:
   std::shared_ptr <ServerImpl> mImpl;

@@ -26,7 +26,7 @@ struct BuilderImpl {
   fs::path root;
   fs::path output;
   std::thread thread;
-  fsw::monitor *monitor;
+  fsw::monitor *monitor = nullptr;
   std::map<std::string, std::list<fs::path>> concernedConfigs;
   std::function<void(void)> cb;
 };
@@ -61,7 +61,9 @@ void Builder::Run() {
       }
     }
   }
+}
 
+void Builder::Watch() {
   auto process_events = [](const std::vector<fsw::event> &events, void *ctx) -> void {
     auto impl = static_cast<BuilderImpl*>(ctx);
     std::list<std::string> files;
@@ -110,9 +112,11 @@ void Builder::Run() {
 }
 
 Builder::~Builder() {
-  LOG_DEBUG << "Stop builder";
-  mImpl->monitor->stop();
-  mImpl->thread.join();
+  if (mImpl->monitor)
+  {
+    mImpl->monitor->stop();
+    mImpl->thread.join();
+  }
 }
 
 void Builder::OnBuild(std::function<void(void)> cb) {

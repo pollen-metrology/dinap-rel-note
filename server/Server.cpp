@@ -51,6 +51,8 @@ void Server::Run(bool buildOnly) {
 
   if (buildOnly) return;
 
+  builder.Watch();
+
   const auto ip = mImpl->config["ip"].as<std::string>("127.0.0.1");
   const auto port = mImpl->config["port"].as<int>(80);
   const auto serverUrl = "http://" + ip + (port == 80 ? "" : ":" + std::to_string(port));

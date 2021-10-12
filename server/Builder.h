@@ -18,6 +18,8 @@ public:
 
   void Run();
 
+  void Watch();
+
   void InitLogger();
 
   void OnBuild(std::function<void(void)> cb);

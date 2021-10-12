@@ -14,6 +14,9 @@
 // drogon
 #include <drogon/drogon.h>
 
+// fmt
+#include <fmt/format.h>
+
 //c++
 #include <filesystem>
 #include <fstream>
@@ -69,6 +72,19 @@ void Server::Run(bool buildOnly) {
       .setDocumentRoot(outputDir)
       .setLogLevel(trantor::Logger::kWarn)
       .registerController(wsCtrl)
+      .registerHandler("/", [&outputDir](const HttpRequestPtr& request, std::function<void(const HttpResponsePtr&)>&& callback) {
+        auto resp = HttpResponse::newHttpResponse();
+        std::string body;
+        body += R"(<ul>)";
+        for (const auto &item: fs::directory_iterator(outputDir)) {
+          if (item.path().extension() == ".html")
+            body += fmt::format(R"(<li><a href="{0}">{0}</a></li>)", item.path().filename().generic_string());
+        }
+        body += R"(</ul>)";
+        resp->setBody(body);
+        callback(resp);
+        return;
+      })
       .registerHandler("/{}", [&outputDir](const HttpRequestPtr& request, std::function<void(const HttpResponsePtr&)>&& callback) {
         std::string file = request->path();
         file.erase(file.begin());

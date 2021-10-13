@@ -22,7 +22,7 @@ public:
 
   void InitLogger();
 
-  void OnBuild(std::function<void(void)> cb);
+  void OnBuild(std::function<void(const std::filesystem::path&)> cb);
 
 private:
   std::shared_ptr<BuilderImpl> mImpl;

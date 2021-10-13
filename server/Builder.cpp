@@ -28,7 +28,7 @@ struct BuilderImpl {
   std::thread thread;
   fsw::monitor *monitor = nullptr;
   std::map<std::string, std::list<fs::path>> concernedConfigs;
-  std::function<void(void)> cb;
+  std::list<std::function<void(fs::path)>> cb;
 };
 
 Builder::Builder(fs::path config, fs::path root, fs::path output) :
@@ -78,7 +78,9 @@ void Builder::Watch() {
           Generator generator(impl->root);
           generator.LoadConfig(configFile);
           generator.Build(impl->output);
-          impl->cb();
+          for (const auto &cb: impl->cb) {
+            cb(generator.GetOutputFile());
+          }
           auto usedFiles = generator.GetUsedFiles();
           for (const auto &usedFile: usedFiles) {
             impl->concernedConfigs[usedFile].emplace_back(configFile);
@@ -119,6 +121,6 @@ Builder::~Builder() {
   }
 }
 
-void Builder::OnBuild(std::function<void(void)> cb) {
-  mImpl->cb = std::move(cb);
+void Builder::OnBuild(std::function<void(const fs::path &)> cb) {
+  mImpl->cb.emplace_back(std::move(cb));
 }

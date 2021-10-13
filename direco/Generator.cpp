@@ -130,6 +130,7 @@ void Generator::Build(const std::filesystem::path &outDir) {
 
   LOG_INFO << "Building to " << (outDir / mImpl->outputFile).string();
   std::fstream fso, fs;
+  std::filesystem::create_directories(outDir/mImpl->outputFile.parent_path());
   fso.open(outDir / mImpl->outputFile, std::fstream::out);
 
   {

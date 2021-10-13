@@ -60,11 +60,16 @@ void Server::Run(bool buildOnly) {
   const auto port = mImpl->config["port"].as<int>(80);
   const auto serverUrl = "http://" + ip + (port == 80 ? "" : ":" + std::to_string(port));
 
-  LOG_INFO << "Starting server on " << serverUrl;
+  std::cout << "Starting server on " << serverUrl << std::endl;
 
-  for (const auto &item: fs::directory_iterator(outputDir)) {
-    LOG_INFO << "Release note available on " << serverUrl << "/" << url::encode(item.path().filename());
+  for (const auto &item: fs::recursive_directory_iterator(outputDir)) {
+    if (item.path().extension() == ".html")
+      std::cout << "Release note available on " << serverUrl << "/" << fs::relative(item.path().parent_path(),outputDir).generic_string() << "/" << url::encode(item.path().filename().generic_string()) << std::endl;
   }
+
+  builder.OnBuild([&serverUrl](const fs::path &path) {
+    std::cout << "Release note available on " << serverUrl << "/" << path.parent_path().generic_string() << "/" << url::encode(path.filename().generic_string()) << std::endl;
+  });
 
   auto wsCtrl = std::make_shared<WebsocketCtrl>(builder);
 
@@ -76,9 +81,9 @@ void Server::Run(bool buildOnly) {
         auto resp = HttpResponse::newHttpResponse();
         std::string body;
         body += R"(<ul>)";
-        for (const auto &item: fs::directory_iterator(outputDir)) {
+        for (const auto &item: fs::recursive_directory_iterator(outputDir)) {
           if (item.path().extension() == ".html")
-            body += fmt::format(R"(<li><a href="{0}">{0}</a></li>)", item.path().filename().generic_string());
+            body += fmt::format(R"(<li><a href="{0}">{0}</a></li>)", fs::relative(item.path(), outputDir).generic_string());
         }
         body += R"(</ul>)";
         resp->setBody(body);

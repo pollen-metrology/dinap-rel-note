@@ -11,7 +11,7 @@ struct WebsocketCtrlImpl {
 };
 
 WebsocketCtrl::WebsocketCtrl(Builder &builder) : mImpl(std::make_shared<WebsocketCtrlImpl>()) {
-  builder.OnBuild([this]{
+  builder.OnBuild([this](const std::filesystem::path&){
     for (const auto &conn: mImpl->connections) {
       if (conn->connected())
         conn->send("reload");

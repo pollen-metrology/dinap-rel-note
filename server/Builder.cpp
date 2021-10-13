@@ -47,7 +47,7 @@ void Builder::InitLogger() {
 
 
 void Builder::Run() {
-  for (const auto &releaseConfigFile: fs::directory_iterator(mImpl->config)) {
+  for (const auto &releaseConfigFile: fs::recursive_directory_iterator(mImpl->config)) {
     if (releaseConfigFile.path().extension() == ".yml") {
       LOG_INFO << "Compiling" << releaseConfigFile.path();
       Generator generator(mImpl->root);

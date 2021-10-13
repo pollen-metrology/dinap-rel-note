@@ -169,7 +169,7 @@ void Generator::Build(const std::filesystem::path &outDir) {
           LOG_DEBUG << "Parsing Markdown file " << doc.path->string();
           str = parser->Parse(ss);
         }
-        Image::Handle(str, mImpl->root);
+        Image::Handle(str, doc.path->parent_path());
         File::Handle(str, mImpl->root);
         fs.close();
         fso << str;

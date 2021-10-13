@@ -16,16 +16,20 @@
 #include <fstream>
 
 void Image::Handle(std::string &str, const std::filesystem::path& root) {
-  auto refPos = str.find("{{img:", 0);
+  auto refPos = str.find(R"(<img src=")", 0);
   while (refPos != std::string::npos) {
-    auto endRefPos = str.find("}}", refPos + 6);
-    std::string refName = str.substr(refPos + 6, (endRefPos - refPos - 6));
+    auto endRefPos = str.find('"', refPos + 10);
+    std::string imgUri = str.substr(refPos + 10, (endRefPos - refPos - 10));
+    if (imgUri.starts_with("data:")) {
+      refPos = str.find(R"(<img src=")", endRefPos);
+      continue;
+    }
 
-    std::filesystem::path imPath = root / refName;
+    std::filesystem::path imPath = root / imgUri;
 
     if (!std::filesystem::exists(imPath)) {
       LOG_ERROR << "Image not found: " << imPath.string() << std::endl;
-      refPos = str.find("{{img:", endRefPos);
+      refPos = str.find(R"(<img src=")", endRefPos);
       continue;
     }
 
@@ -38,13 +42,13 @@ void Image::Handle(std::string &str, const std::filesystem::path& root) {
     std::string encoded;
     if (!Base64::Encode(input, &encoded)) {
       LOG_ERROR << "Failed to encode image" << std::endl;
-      refPos = str.find("{{img:", endRefPos);
+      refPos = str.find(R"(<img src=")", endRefPos);
       continue;
     }
 
     LOG_INFO << "Using image " << imPath.string();
-    utils::Replace(str, "{{img:" + refName + "}}", "data:image/jpeg;base64," + encoded);
+    utils::Replace(str, imgUri, "data:image/jpeg;base64," + encoded);
 
-    refPos = str.find("{{img:", endRefPos);
+    refPos = str.find(R"(<img src=")", endRefPos);
   }
 }
